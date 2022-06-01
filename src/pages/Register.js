@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert,ImageBackground,View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, SafeAreaView, ScrollView } from 'react-native';
+import { Pressable,Alert,ImageBackground,View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, SafeAreaView, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as axios from 'axios';
 
@@ -15,12 +15,30 @@ const Register = ({ navigation }) => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [errorUsername, setErrorUsername] = useState(false);
+    const [errorPassword, setErrorPassword] = useState(false);
+    const [errorEmail, setErrorEmail] = useState(false);
+    const [passwordVisibility, setPasswordVisibility] = useState(true);
+    const [rightIcon, setRightIcon] = useState(require('../assets/eye.png'));
 
-    const getData = () => {
-        axios.get('https://arcane-coast-59669.herokuapp.com/user')
-        .then(res => {
-            setData(res.data);
-        })
+    const getData = async () => {
+        try {
+            const response = await axios.get('https://arcane-coast-59669.herokuapp.com/user');
+            setData(response.data);
+        }
+        catch (error) {
+            console.log(error);
+        }
+    }
+
+    const handlePasswordVisibility = () => {
+        if(rightIcon === require('../assets/eye.png')){
+            setRightIcon(require('../assets/eye-off.png'));
+            setPasswordVisibility(!passwordVisibility);
+        }else{
+            setRightIcon(require('../assets/eye.png'));
+            setPasswordVisibility(!passwordVisibility);
+        }
     }
 
     const handleRegister = () => {
@@ -28,16 +46,20 @@ const Register = ({ navigation }) => {
            Alert.alert('Data tidak boleh kosong')
         }
         else if (password.length < 8) {
-            Alert.alert('Password minimal 8 karakter')
+            setErrorPassword(true);
+            setErrorPassword('Password harus lebih dari 4 karakter');
         }
-        else if (username.length < 8) {
-            Alert.alert('Username minimal 8 karakter')
+        else if (username.length < 4) {
+            setErrorUsername(true);
+            setErrorUsername('Username harus lebih dari 8 karakter');
         }
         else if(!email.includes('@')){
-            Alert.alert('Email tidak valid')
+            setErrorEmail(true);
+            setErrorEmail('Email tidak valid');
         }
         else if(data.find(item => item.username === username)){
-            Alert.alert('Username sudah terdaftar')
+            setErrorUsername(true);
+            setErrorUsername('Username sudah digunakan');
         }
         else {
             axios.post('https://arcane-coast-59669.herokuapp.com/user/signup', {
@@ -95,7 +117,8 @@ const Register = ({ navigation }) => {
                         placeholder="Username"
                         placeholderTextColor="#000"
                         onChangeText={(username) => setUsername(username)}
-                    />                
+                    />
+                    {errorUsername && <Text style={styles.error}>{errorUsername}</Text>}   
                 </KeyboardAvoidingView>
                 <KeyboardAvoidingView style={styles.bodyContent} focusable={true}>
                     <TextInput
@@ -103,16 +126,23 @@ const Register = ({ navigation }) => {
                         placeholder="Email"
                         placeholderTextColor="#000"
                         onChangeText={(email) => setEmail(email)}
-                    />                
+                    />
+                    {errorEmail && <Text style={styles.error}>{errorEmail}</Text>}              
                 </KeyboardAvoidingView>
                 <KeyboardAvoidingView style={styles.bodyContent} focusable={true}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Password"
-                        placeholderTextColor="#000"
-                        onChangeText={(password) => setPassword(password)}
-                        secureTextEntry={true}
-                    />                
+                    <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Password"
+                            placeholderTextColor="#000"
+                            onChangeText={(password) => setPassword(password)}
+                            secureTextEntry={passwordVisibility}
+                        />
+                        <Pressable onPress={handlePasswordVisibility}>
+                            <Image source={rightIcon} style={styles.rightIcon}/>
+                        </Pressable>     
+                    </View>
+                    {errorPassword && <Text style={styles.error}>{errorPassword}</Text>}              
                 </KeyboardAvoidingView>
             </View>
             <View style={styles.footer}>
@@ -200,5 +230,19 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: 15,
         marginLeft: 5,
-    }
+    },
+    error: {
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5,
+    },
+    rightIcon : {
+        width: 25,
+        height: 25,
+        marginLeft: 10,
+        position: 'absolute',
+        right: 10,
+        top: 7,
+
+    },
 })
